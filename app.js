@@ -11,6 +11,7 @@ let allChannels = [];
 let hls = null; // HLS.js instance
 let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 
+// Initialize HLS.js Player
 function initializeHLSPlayer() {
   if (hls) {
     hls.destroy(); // Clean up the previous instance
@@ -18,6 +19,7 @@ function initializeHLSPlayer() {
   hls = new Hls();
 }
 
+// Display Error Messages
 function displayError(message) {
   const errorBox = document.createElement('div');
   errorBox.className = 'error-box';
@@ -26,6 +28,7 @@ function displayError(message) {
   setTimeout(() => errorBox.remove(), 3000);
 }
 
+// Page Load
 window.onload = async () => {
   initializeHLSPlayer();
   showLoading(true);
@@ -35,6 +38,7 @@ window.onload = async () => {
   showLoading(false);
 };
 
+// Show/Hide Loading Spinner
 function showLoading(show) {
   const loading = document.getElementById('loading-indicator');
   if (show) {
@@ -49,6 +53,7 @@ function showLoading(show) {
   }
 }
 
+// Load Channels from M3U File
 async function loadChannels() {
   try {
     const response = await fetch(m3uUrl);
@@ -63,6 +68,7 @@ async function loadChannels() {
   }
 }
 
+// Parse M3U Playlist
 function parseM3U(m3uText) {
   const lines = m3uText.split('\n');
   const channels = [];
@@ -83,6 +89,7 @@ function parseM3U(m3uText) {
   return channels;
 }
 
+// Render Channels
 function renderChannels(channels) {
   gridContainer.innerHTML = '';
   channels.forEach(channel => {
@@ -102,6 +109,7 @@ function renderChannels(channels) {
   });
 }
 
+// Populate Category Dropdown
 function populateCategories(channels) {
   const categories = new Set(channels.map(channel => channel.group));
   categorySelect.innerHTML = '<option value="all">All Categories</option>';
@@ -113,6 +121,7 @@ function populateCategories(channels) {
   });
 }
 
+// Play Channel
 function playChannel(url) {
   if (Hls.isSupported()) {
     showLoading(true);
@@ -122,6 +131,7 @@ function playChannel(url) {
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
       hlsPlayerElement.play().then(() => {
         playerModal.style.display = 'flex';
+        enableFullScreen(hlsPlayerElement);
         showLoading(false);
       }).catch(err => {
         displayError('Error playing channel.');
@@ -140,17 +150,37 @@ function playChannel(url) {
     hlsPlayerElement.addEventListener('loadedmetadata', () => {
       hlsPlayerElement.play();
       playerModal.style.display = 'flex';
+      enableFullScreen(hlsPlayerElement);
     });
   } else {
     alert('HLS is not supported in this browser.');
   }
 }
 
+// Enable Fullscreen for the Player
+function enableFullScreen(videoElement) {
+  const fullscreenHandler = () => {
+    if (videoElement.requestFullscreen) {
+      videoElement.requestFullscreen();
+    } else if (videoElement.mozRequestFullScreen) { // Firefox
+      videoElement.mozRequestFullScreen();
+    } else if (videoElement.webkitRequestFullscreen) { // Chrome, Safari, Opera
+      videoElement.webkitRequestFullscreen();
+    } else if (videoElement.msRequestFullscreen) { // IE/Edge
+      videoElement.msRequestFullscreen();
+    }
+  };
+
+  videoElement.addEventListener('dblclick', fullscreenHandler); // Enable fullscreen on double-click
+}
+
+// Close Player Modal
 closePlayerBtn.addEventListener('click', () => {
   if (hls) hls.detachMedia();
   playerModal.style.display = 'none';
 });
 
+// Search and Category Filters
 function initSearchAndCategory() {
   searchInput.addEventListener('input', () => {
     const searchText = searchInput.value.toLowerCase();
@@ -163,6 +193,7 @@ function initSearchAndCategory() {
   });
 }
 
+// Manage Favorites
 function toggleFavorite(channel) {
   if (favorites.includes(channel.url)) {
     favorites = favorites.filter(fav => fav !== channel.url);
@@ -173,6 +204,7 @@ function toggleFavorite(channel) {
   renderFavorites();
 }
 
+// Render Favorites Section
 function renderFavorites() {
   const favoriteContainer = document.getElementById('favorites');
   if (!favoriteContainer) return;
