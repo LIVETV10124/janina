@@ -1,27 +1,21 @@
-// app.js
 const m3uUrl = "https://raw.githubusercontent.com/MohammadKobirShah/KobirIPTV/refs/heads/main/KobirIPTV.m3u";
 
 const gridContainer = document.querySelector('.grid-container');
 const searchInput = document.getElementById('search-input');
 const categorySelect = document.getElementById('category-select');
 const playerModal = document.getElementById('player-modal');
-const shakaPlayerElement = document.getElementById('shaka-player');
+const hlsPlayerElement = document.getElementById('hls-player');
 const closePlayerBtn = document.getElementById('close-player');
 
 let allChannels = [];
-let shakaPlayer = null;
+let hls = null; // HLS.js instance
 let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 
-function initializeShakaPlayer() {
-  if (shaka.Player.isBrowserSupported()) {
-    shakaPlayer = new shaka.Player(shakaPlayerElement);
-    shakaPlayer.addEventListener('error', (event) => {
-      displayError('Error with Shaka Player. Try another channel.');
-      console.error('Shaka Error:', event.detail);
-    });
-  } else {
-    alert('Shaka Player is not supported in this browser.');
+function initializeHLSPlayer() {
+  if (hls) {
+    hls.destroy(); // Clean up the previous instance
   }
+  hls = new Hls();
 }
 
 function displayError(message) {
@@ -33,7 +27,7 @@ function displayError(message) {
 }
 
 window.onload = async () => {
-  initializeShakaPlayer();
+  initializeHLSPlayer();
   showLoading(true);
   await loadChannels();
   initSearchAndCategory();
@@ -120,20 +114,41 @@ function populateCategories(channels) {
 }
 
 function playChannel(url) {
-  if (!shakaPlayer) return alert('Shaka Player not initialized.');
-  showLoading(true);
-  shakaPlayer.load(url).then(() => {
-    playerModal.style.display = 'flex';
-  }).catch(err => {
-    displayError('Error playing channel.');
-    console.error(err);
-  }).finally(() => showLoading(false));
+  if (Hls.isSupported()) {
+    showLoading(true);
+    hls.loadSource(url);
+    hls.attachMedia(hlsPlayerElement);
+
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      hlsPlayerElement.play().then(() => {
+        playerModal.style.display = 'flex';
+        showLoading(false);
+      }).catch(err => {
+        displayError('Error playing channel.');
+        console.error(err);
+        showLoading(false);
+      });
+    });
+
+    hls.on(Hls.Events.ERROR, (event, data) => {
+      displayError('Playback error. Please try another channel.');
+      console.error('HLS.js Error:', data);
+      showLoading(false);
+    });
+  } else if (hlsPlayerElement.canPlayType('application/vnd.apple.mpegurl')) {
+    hlsPlayerElement.src = url;
+    hlsPlayerElement.addEventListener('loadedmetadata', () => {
+      hlsPlayerElement.play();
+      playerModal.style.display = 'flex';
+    });
+  } else {
+    alert('HLS is not supported in this browser.');
+  }
 }
 
 closePlayerBtn.addEventListener('click', () => {
-  shakaPlayer.unload().then(() => {
-    playerModal.style.display = 'none';
-  });
+  if (hls) hls.detachMedia();
+  playerModal.style.display = 'none';
 });
 
 function initSearchAndCategory() {
