@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPTV Player</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>IPTV Player</h1>
+      <input type="text" id="search-input" placeholder="Search Channels..." />
+      <select id="category-select"></select>
+    </header>
+
+    <div id="favorites-section">
+      <h2>Favorites</h2>
+      <div id="favorites" class="favorites-container"></div>
+    </div>
+
+    <div class="grid-container"></div>
+  </div>
+
+  <div id="loading-indicator"></div>
+
+  <!-- Player Modal -->
+  <div id="player-modal" class="modal">
+    <div class="player-container">
+      <video id="shaka-player" controls></video>
+      <button id="close-player">Close</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.0.0/shaka-player.compiled.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
